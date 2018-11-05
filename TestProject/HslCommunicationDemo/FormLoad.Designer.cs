@@ -29,6 +29,7 @@
         private void InitializeComponent( )
         {
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.button39 = new System.Windows.Forms.Button();
             this.button36 = new System.Windows.Forms.Button();
             this.button10 = new System.Windows.Forms.Button();
             this.button5 = new System.Windows.Forms.Button();
@@ -41,6 +42,7 @@
             this.button19 = new System.Windows.Forms.Button();
             this.button6 = new System.Windows.Forms.Button();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.button38 = new System.Windows.Forms.Button();
             this.button32 = new System.Windows.Forms.Button();
             this.button13 = new System.Windows.Forms.Button();
             this.button7 = new System.Windows.Forms.Button();
@@ -105,6 +107,7 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.button39);
             this.groupBox1.Controls.Add(this.button36);
             this.groupBox1.Controls.Add(this.button10);
             this.groupBox1.Controls.Add(this.button5);
@@ -119,6 +122,17 @@
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Siemens PLC(西门子 PLC)";
+            // 
+            // button39
+            // 
+            this.button39.Location = new System.Drawing.Point(98, 104);
+            this.button39.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.button39.Name = "button39";
+            this.button39.Size = new System.Drawing.Size(70, 32);
+            this.button39.TabIndex = 6;
+            this.button39.Text = "s7-400";
+            this.button39.UseVisualStyleBackColor = true;
+            this.button39.Click += new System.EventHandler(this.button39_Click);
             // 
             // button36
             // 
@@ -158,7 +172,7 @@
             this.button3.Location = new System.Drawing.Point(18, 104);
             this.button3.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(150, 32);
+            this.button3.Size = new System.Drawing.Size(70, 32);
             this.button3.TabIndex = 2;
             this.button3.Text = "s7-300";
             this.button3.UseVisualStyleBackColor = true;
@@ -247,6 +261,7 @@
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.button38);
             this.groupBox3.Controls.Add(this.button32);
             this.groupBox3.Controls.Add(this.button13);
             this.groupBox3.Controls.Add(this.button7);
@@ -260,6 +275,17 @@
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Melsec PLC(三菱 PLC)";
             // 
+            // button38
+            // 
+            this.button38.Location = new System.Drawing.Point(15, 184);
+            this.button38.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.button38.Name = "button38";
+            this.button38.Size = new System.Drawing.Size(150, 32);
+            this.button38.TabIndex = 5;
+            this.button38.Text = "Fx Links【485】";
+            this.button38.UseVisualStyleBackColor = true;
+            this.button38.Click += new System.EventHandler(this.button38_Click);
+            // 
             // button32
             // 
             this.button32.Location = new System.Drawing.Point(15, 144);
@@ -267,7 +293,7 @@
             this.button32.Name = "button32";
             this.button32.Size = new System.Drawing.Size(150, 32);
             this.button32.TabIndex = 4;
-            this.button32.Text = "Fx Serial【串口】";
+            this.button32.Text = "Fx Serial【编程口】";
             this.button32.UseVisualStyleBackColor = true;
             this.button32.Click += new System.EventHandler(this.button32_Click);
             // 
@@ -322,7 +348,7 @@
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(53, 17);
             this.label2.TabIndex = 4;
-            this.label2.Text = "blogs：";
+            this.label2.Text = "Blogs：";
             // 
             // linkLabel2
             // 
@@ -457,9 +483,9 @@
             this.label1.AutoSize = true;
             this.label1.Location = new System.Drawing.Point(14, 37);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(57, 17);
+            this.label1.Size = new System.Drawing.Size(58, 17);
             this.label1.TabIndex = 9;
-            this.label1.Text = "github：";
+            this.label1.Text = "Github：";
             // 
             // groupBox5
             // 
@@ -800,9 +826,9 @@
             this.label5.AutoSize = true;
             this.label5.Location = new System.Drawing.Point(352, 37);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(82, 17);
+            this.label5.Size = new System.Drawing.Size(84, 17);
             this.label5.TabIndex = 23;
-            this.label5.Text = "mes demo：";
+            this.label5.Text = "MES demo：";
             // 
             // linkLabel8
             // 
@@ -933,6 +959,8 @@
         private System.Windows.Forms.LinkLabel linkLabel7;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.LinkLabel linkLabel8;
+        private System.Windows.Forms.Button button38;
+        private System.Windows.Forms.Button button39;
     }
 }
 

@@ -8,22 +8,21 @@ using System.Text;
 using System.Windows.Forms;
 using HslCommunication.Profinet;
 using System.Threading;
-using HslCommunication.Profinet.Siemens;
+using HslCommunication.Profinet.Melsec;
 using HslCommunication;
-using System.IO.Ports;
 
 namespace HslCommunicationDemo
 {
-    public partial class FormSiemensPPI : Form
+    public partial class FormMelsecLinks : Form
     {
-        public FormSiemensPPI( )
+        public FormMelsecLinks( )
         {
             InitializeComponent( );
-            siemensPPI = new SiemensPPI( );
+            melsecSerial = new MelsecFxLinks( );
         }
 
 
-        private SiemensPPI siemensPPI = null;
+        private MelsecFxLinks melsecSerial = null;
 
         private void linkLabel1_LinkClicked( object sender, LinkLabelLinkClickedEventArgs e )
         {
@@ -31,27 +30,21 @@ namespace HslCommunicationDemo
             {
                 System.Diagnostics.Process.Start( linkLabel1.Text );
             }
-            catch (Exception ex)
+            catch (Exception ex) 
             {
                 MessageBox.Show( ex.Message );
             }
+
+
         }
 
         private void FormSiemens_Load( object sender, EventArgs e )
         {
-             panel2.Enabled = false;
+            panel2.Enabled = false;
             userCurve1.SetLeftCurve( "A", new float[0], Color.Tomato );
+            comboBox1.SelectedIndex = 2;
 
             Language( Program.Language );
-            comboBox3.DataSource = SerialPort.GetPortNames( );
-            try
-            {
-                comboBox3.SelectedIndex = 0;
-            }
-            catch
-            {
-                comboBox3.Text = "COM3";
-            }
 
             if (!Program.ShowAuthorInfomation)
             {
@@ -59,20 +52,18 @@ namespace HslCommunicationDemo
                 linkLabel1.Visible = false;
                 label20.Visible = false;
             }
-
-            comboBox1.SelectedIndex = 2;
         }
+
 
         private void Language( int language )
         {
             if (language == 2)
             {
-                Text = "Siemens Read PLC Demo";
+                Text = "Melsec Read PLC Demo";
                 label2.Text = "Blogs:";
                 label4.Text = "Protocols:";
                 label20.Text = "Author:Richard Hu";
-                label5.Text = "S7";
-
+                label5.Text = "Fx Serial";
 
                 label1.Text = "parity:";
                 label3.Text = "Stop bits";
@@ -86,7 +77,7 @@ namespace HslCommunicationDemo
                 label7.Text = "result:";
 
                 button_read_bool.Text = "Read Bit";
-                button_read_byte.Text = "r-byte";
+                label23.Text = "X,Y,M,L,V,B";
                 button_read_short.Text = "r-short";
                 button_read_ushort.Text = "r-ushort";
                 button_read_int.Text = "r-int";
@@ -101,6 +92,9 @@ namespace HslCommunicationDemo
                 label12.Text = "length:";
                 button25.Text = "Bulk Read";
                 label13.Text = "Results:";
+                label16.Text = "Message:";
+                label14.Text = "Results:";
+                button26.Text = "Read";
 
                 label10.Text = "Address:";
                 label9.Text = "Value:";
@@ -119,15 +113,19 @@ namespace HslCommunicationDemo
                 groupBox1.Text = "Single Data Read test";
                 groupBox2.Text = "Single Data Write test";
                 groupBox3.Text = "Bulk Read test";
+                groupBox4.Text = "Message reading test, hex string needs to be filled in";
                 groupBox5.Text = "Timed reading, curve display";
-                
+
+                button3.Text = "Pressure test, r/w 3,000s";
                 label15.Text = "Address:";
                 label18.Text = "Interval";
                 button27.Text = "Start";
                 label17.Text = "This assumes that the type of data is determined for short:";
-                button23.Text = "w-byte";
+                label24.Text = "X,Y,M,L,V,B";
+                comboBox1.DataSource = new string[] { "None", "Odd", "Even" };
             }
         }
+
         private void FormSiemens_FormClosing( object sender, FormClosingEventArgs e )
         {
             isThreadRun = false;
@@ -193,24 +191,27 @@ namespace HslCommunicationDemo
                 MessageBox.Show( "停止位输入错误！" );
                 return;
             }
+            
 
-
-            siemensPPI?.Close( );
-            siemensPPI = new SiemensPPI( );
-
+            melsecSerial?.Close( );
+            melsecSerial = new MelsecFxLinks( );
+            
             try
             {
-                siemensPPI.SerialPortInni( sp =>
+                melsecSerial.SerialPortInni( sp =>
                 {
-                    sp.PortName = comboBox3.Text;
+                    sp.PortName = textBox1.Text;
                     sp.BaudRate = baudRate;
                     sp.DataBits = dataBits;
                     sp.StopBits = stopBits == 0 ? System.IO.Ports.StopBits.None : (stopBits == 1 ? System.IO.Ports.StopBits.One : System.IO.Ports.StopBits.Two);
                     sp.Parity = comboBox1.SelectedIndex == 0 ? System.IO.Ports.Parity.None : (comboBox1.SelectedIndex == 1 ? System.IO.Ports.Parity.Odd : System.IO.Ports.Parity.Even);
                 } );
-                siemensPPI.Open( );
-                siemensPPI.Station = byte.Parse( textBox15.Text );
+                melsecSerial.Station = byte.Parse( textBox15.Text );
+                melsecSerial.WaittingTime = byte.Parse( textBox18.Text );
+                melsecSerial.SumCheck = checkBox1.Checked;
 
+
+                melsecSerial.Open( );
                 button2.Enabled = true;
                 button1.Enabled = false;
                 panel2.Enabled = true;
@@ -224,17 +225,13 @@ namespace HslCommunicationDemo
         private void button2_Click( object sender, EventArgs e )
         {
             // 断开连接
-            siemensPPI.Close( );
+            melsecSerial.Close( );
             button2.Enabled = false;
             button1.Enabled = true;
             panel2.Enabled = false;
         }
 
-
-
-
-
-
+        
 
         #endregion
 
@@ -243,66 +240,60 @@ namespace HslCommunicationDemo
 
         private void button_read_bool_Click( object sender, EventArgs e )
         {
-            Clipboard.SetText( HslCommunication.BasicFramework.SoftBasic.ByteToHexString( SiemensPPI.BuildReadCommand( 2, textBox3.Text, 1, true ).Content, ' ' ) );
             // 读取bool变量
-            readResultRender( siemensPPI.ReadBool( textBox3.Text ), textBox3.Text, textBox4 );
+            readResultRender( melsecSerial.ReadBool( textBox3.Text ), textBox3.Text, textBox4 );
         }
 
-        private void button_read_byte_Click( object sender, EventArgs e )
-        {
-            // 读取byte变量
-            readResultRender( siemensPPI.ReadByte( textBox3.Text ), textBox3.Text, textBox4 );
-        }
         private void button_read_short_Click( object sender, EventArgs e )
         {
             // 读取short变量
-            readResultRender( siemensPPI.ReadInt16( textBox3.Text ), textBox3.Text, textBox4 );
+            readResultRender( melsecSerial.ReadInt16( textBox3.Text ), textBox3.Text, textBox4 );
         }
 
         private void button_read_ushort_Click( object sender, EventArgs e )
         {
             // 读取ushort变量
-            readResultRender( siemensPPI.ReadUInt16( textBox3.Text ), textBox3.Text, textBox4 );
+            readResultRender( melsecSerial.ReadUInt16( textBox3.Text ), textBox3.Text, textBox4 );
         }
 
         private void button_read_int_Click( object sender, EventArgs e )
         {
             // 读取int变量
-            readResultRender( siemensPPI.ReadInt32( textBox3.Text ), textBox3.Text, textBox4 );
+            readResultRender( melsecSerial.ReadInt32( textBox3.Text ), textBox3.Text, textBox4 );
         }
         private void button_read_uint_Click( object sender, EventArgs e )
         {
             // 读取uint变量
-            readResultRender( siemensPPI.ReadUInt32( textBox3.Text ), textBox3.Text, textBox4 );
+            readResultRender( melsecSerial.ReadUInt32( textBox3.Text ), textBox3.Text, textBox4 );
         }
         private void button_read_long_Click( object sender, EventArgs e )
         {
             // 读取long变量
-            readResultRender( siemensPPI.ReadInt64( textBox3.Text ), textBox3.Text, textBox4 );
+            readResultRender( melsecSerial.ReadInt64( textBox3.Text ), textBox3.Text, textBox4 );
         }
 
         private void button_read_ulong_Click( object sender, EventArgs e )
         {
             // 读取ulong变量
-            readResultRender( siemensPPI.ReadUInt64( textBox3.Text ), textBox3.Text, textBox4 );
+            readResultRender( melsecSerial.ReadUInt64( textBox3.Text ), textBox3.Text, textBox4 );
         }
 
         private void button_read_float_Click( object sender, EventArgs e )
         {
             // 读取float变量
-            readResultRender( siemensPPI.ReadFloat( textBox3.Text ), textBox3.Text, textBox4 );
+            readResultRender( melsecSerial.ReadFloat( textBox3.Text ), textBox3.Text, textBox4 );
         }
 
         private void button_read_double_Click( object sender, EventArgs e )
         {
             // 读取double变量
-            readResultRender( siemensPPI.ReadDouble( textBox3.Text ), textBox3.Text, textBox4 );
+            readResultRender( melsecSerial.ReadDouble( textBox3.Text ), textBox3.Text, textBox4 );
         }
 
         private void button_read_string_Click( object sender, EventArgs e )
         {
             // 读取字符串
-            readResultRender( siemensPPI.ReadString( textBox3.Text, ushort.Parse( textBox5.Text ) ), textBox3.Text, textBox4 );
+            readResultRender( melsecSerial.ReadString( textBox3.Text, ushort.Parse( textBox5.Text ) ), textBox3.Text, textBox4 );
         }
 
 
@@ -314,30 +305,9 @@ namespace HslCommunicationDemo
         private void button24_Click( object sender, EventArgs e )
         {
             // bool写入
-            //MessageBox.Show( HslCommunication.BasicFramework.SoftBasic.ByteToHexString( SiemensPPI.BuildWriteCommand( siemensPPI.Station, textBox8.Text, new byte[] { 1 } ).Content, ' ' ) );
-            //return;
             try
             {
-                writeResultRender( siemensPPI.Write( textBox8.Text, bool.Parse( textBox7.Text ) ), textBox8.Text );
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show( ex.Message );
-            }
-        }
-
-        private void button23_Click( object sender, EventArgs e )
-        {
-            // byte写入
-            try
-            {
-                //byte[] buffer = new byte[500];
-                //for (int i = 0; i < 500; i++)
-                //{
-                //    buffer[i] = (byte)i;
-                //}
-                //writeResultRender( siemensTcpNet.Write( textBox8.Text, buffer ), textBox8.Text );
-                writeResultRender( siemensPPI.WriteByte( textBox8.Text, byte.Parse( textBox7.Text ) ), textBox8.Text );
+                writeResultRender( melsecSerial.Write( textBox8.Text,bool.Parse( textBox7.Text )), textBox8.Text );
             }
             catch (Exception ex)
             {
@@ -347,12 +317,10 @@ namespace HslCommunicationDemo
 
         private void button22_Click( object sender, EventArgs e )
         {
-            Clipboard.SetText( HslCommunication.BasicFramework.SoftBasic.ByteToHexString( SiemensPPI.BuildWriteCommand( 2, textBox8.Text, new byte[] { 0x12, 0x34 } ).Content, ' ' ) );
-
             // short写入
             try
             {
-                writeResultRender( siemensPPI.Write( textBox8.Text, short.Parse( textBox7.Text ) ), textBox8.Text );
+                writeResultRender( melsecSerial.Write( textBox8.Text, short.Parse( textBox7.Text ) ), textBox8.Text );
             }
             catch (Exception ex)
             {
@@ -365,7 +333,7 @@ namespace HslCommunicationDemo
             // ushort写入
             try
             {
-                writeResultRender( siemensPPI.Write( textBox8.Text, ushort.Parse( textBox7.Text ) ), textBox8.Text );
+                writeResultRender( melsecSerial.Write( textBox8.Text, ushort.Parse( textBox7.Text ) ), textBox8.Text );
             }
             catch (Exception ex)
             {
@@ -379,7 +347,7 @@ namespace HslCommunicationDemo
             // int写入
             try
             {
-                writeResultRender( siemensPPI.Write( textBox8.Text, int.Parse( textBox7.Text ) ), textBox8.Text );
+                writeResultRender( melsecSerial.Write( textBox8.Text, int.Parse( textBox7.Text ) ), textBox8.Text );
             }
             catch (Exception ex)
             {
@@ -392,7 +360,7 @@ namespace HslCommunicationDemo
             // uint写入
             try
             {
-                writeResultRender( siemensPPI.Write( textBox8.Text, uint.Parse( textBox7.Text ) ), textBox8.Text );
+                writeResultRender( melsecSerial.Write( textBox8.Text, uint.Parse( textBox7.Text ) ), textBox8.Text );
             }
             catch (Exception ex)
             {
@@ -405,7 +373,7 @@ namespace HslCommunicationDemo
             // long写入
             try
             {
-                writeResultRender( siemensPPI.Write( textBox8.Text, long.Parse( textBox7.Text ) ), textBox8.Text );
+                writeResultRender( melsecSerial.Write( textBox8.Text, long.Parse( textBox7.Text ) ), textBox8.Text );
             }
             catch (Exception ex)
             {
@@ -418,7 +386,7 @@ namespace HslCommunicationDemo
             // ulong写入
             try
             {
-                writeResultRender( siemensPPI.Write( textBox8.Text, ulong.Parse( textBox7.Text ) ), textBox8.Text );
+                writeResultRender( melsecSerial.Write( textBox8.Text, ulong.Parse( textBox7.Text ) ), textBox8.Text );
             }
             catch (Exception ex)
             {
@@ -431,7 +399,7 @@ namespace HslCommunicationDemo
             // float写入
             try
             {
-                writeResultRender( siemensPPI.Write( textBox8.Text, float.Parse( textBox7.Text ) ), textBox8.Text );
+                writeResultRender( melsecSerial.Write( textBox8.Text, float.Parse( textBox7.Text ) ), textBox8.Text );
             }
             catch (Exception ex)
             {
@@ -444,7 +412,7 @@ namespace HslCommunicationDemo
             // double写入
             try
             {
-                writeResultRender( siemensPPI.Write( textBox8.Text, double.Parse( textBox7.Text ) ), textBox8.Text );
+                writeResultRender( melsecSerial.Write( textBox8.Text, double.Parse( textBox7.Text ) ), textBox8.Text );
             }
             catch (Exception ex)
             {
@@ -458,7 +426,7 @@ namespace HslCommunicationDemo
             // string写入
             try
             {
-                writeResultRender( siemensPPI.Write( textBox8.Text, textBox7.Text ), textBox8.Text );
+                writeResultRender( melsecSerial.Write( textBox8.Text, textBox7.Text ), textBox8.Text );
             }
             catch (Exception ex)
             {
@@ -477,7 +445,7 @@ namespace HslCommunicationDemo
         {
             try
             {
-                OperateResult<byte[]> read = siemensPPI.Read( textBox6.Text, ushort.Parse( textBox9.Text ) );
+                OperateResult<byte[]> read = melsecSerial.Read( textBox6.Text, ushort.Parse( textBox9.Text ) );
                 if (read.IsSuccess)
                 {
                     textBox10.Text = "结果：" + HslCommunication.BasicFramework.SoftBasic.ByteToHexString( read.Content );
@@ -495,15 +463,30 @@ namespace HslCommunicationDemo
 
 
 
-        private void button3_Click( object sender, EventArgs e )
-        {
-        }
-
         #endregion
 
         #region 报文读取测试
 
-        
+
+        private void button26_Click( object sender, EventArgs e )
+        {
+            try
+            {
+                OperateResult<byte[]> read = melsecSerial.ReadBase( HslCommunication.BasicFramework.SoftBasic.HexStringToBytes( textBox13.Text ) );
+                if (read.IsSuccess)
+                {
+                    textBox11.Text = "结果：" + HslCommunication.BasicFramework.SoftBasic.ByteToHexString( read.Content );
+                }
+                else
+                {
+                    MessageBox.Show( "读取失败：" + read.ToMessageShowString( ) );
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show( "读取失败：" + ex.Message );
+            }
+        }
 
 
         #endregion
@@ -540,7 +523,7 @@ namespace HslCommunicationDemo
             }
         }
 
-        private void ThreadReadServer( )
+        private void ThreadReadServer()
         {
             while (isThreadRun)
             {
@@ -548,7 +531,7 @@ namespace HslCommunicationDemo
 
                 try
                 {
-                    OperateResult<short> read = siemensPPI.ReadInt16( textBox12.Text );
+                    OperateResult<short> read = melsecSerial.ReadInt16( textBox12.Text );
                     if (read.IsSuccess)
                     {
                         // 显示曲线
@@ -571,113 +554,154 @@ namespace HslCommunicationDemo
 
         #endregion
 
-        #region 测试功能代码
+        #region 测试使用
 
-
-        private void Test1( )
+        private void test1()
         {
-            OperateResult<bool> read = siemensPPI.ReadBool( "M100.4" );
+            OperateResult<bool[]> read = melsecSerial.ReadBool( "M100", 10 );
+            if(read.IsSuccess)
+            {
+                bool m100 = read.Content[0];
+                // and so on
+                bool m109 = read.Content[9];
+            }
+            else
+            {
+                // failed
+            }
+        }
+        
+
+        private void test3( )
+        {
+            short d100_short = melsecSerial.ReadInt16( "D100" ).Content;
+            ushort d100_ushort = melsecSerial.ReadUInt16( "D100" ).Content;
+            int d100_int = melsecSerial.ReadInt32( "D100" ).Content;
+            uint d100_uint = melsecSerial.ReadUInt32( "D100" ).Content;
+            long d100_long = melsecSerial.ReadInt64( "D100" ).Content;
+            ulong d100_ulong = melsecSerial.ReadUInt64( "D100" ).Content;
+            float d100_float = melsecSerial.ReadFloat( "D100" ).Content;
+            double d100_double = melsecSerial.ReadDouble( "D100" ).Content;
+            // need to specify the text length
+            string d100_string = melsecSerial.ReadString( "D100", 10 ).Content;
+        }
+        private void test4( )
+        {
+            melsecSerial.Write( "D100", (short)5 );
+            melsecSerial.Write( "D100", (ushort)5 );
+            melsecSerial.Write( "D100", 5 );
+            melsecSerial.Write( "D100", (uint)5 );
+            melsecSerial.Write( "D100", (long)5 );
+            melsecSerial.Write( "D100", (ulong)5 );
+            melsecSerial.Write( "D100", 5f );
+            melsecSerial.Write( "D100", 5d );
+            // length should Multiples of 2 
+            melsecSerial.Write( "D100", "12345678" );
+        }
+
+
+        private void test5( )
+        {
+            OperateResult<byte[]> read = melsecSerial.Read( "D100", 10 );
+            if(read.IsSuccess)
+            {
+                int count = melsecSerial.ByteTransform.TransInt32( read.Content, 0 );
+                float temp = melsecSerial.ByteTransform.TransSingle( read.Content, 4 );
+                short name1 = melsecSerial.ByteTransform.TransInt16( read.Content, 8 );
+                string barcode = Encoding.ASCII.GetString( read.Content, 10, 10 );
+            }
+        }
+
+        private void test6( )
+        {
+            OperateResult<UserType> read = melsecSerial.ReadCustomer<UserType>( "D100" );
             if (read.IsSuccess)
             {
-                bool m100_4 = read.Content;
+                UserType value = read.Content;
             }
-            else
-            {
-                // failed
-                string err = read.Message;
-            }
+            // write value
+            melsecSerial.WriteCustomer( "D100", new UserType( ) );
 
-            OperateResult write = siemensPPI.Write( "M100.4", true );
-            if (write.IsSuccess)
-            {
-                // success
-            }
-            else
-            {
-                // failed
-                string err = write.Message;
-            }
+            melsecSerial.LogNet = new HslCommunication.LogNet.LogNetSingle( Application.StartupPath + "\\Logs.txt" );
+
         }
 
-        private void Test2( )
+        // private MelsecMcAsciiNet melsec_ascii_net = null;
+
+        #endregion
+
+        #region 压力测试
+
+        private int thread_status = 0;
+        private int failed = 0;
+        private DateTime thread_time_start = DateTime.Now;
+        // 压力测试，开3个线程，每个线程进行读写操作，看使用时间
+        private void button3_Click( object sender, EventArgs e )
         {
-            byte m100_byte = siemensPPI.ReadByte( "M100" ).Content;
-            short m100_short = siemensPPI.ReadInt16( "M100" ).Content;
-            ushort m100_ushort = siemensPPI.ReadUInt16( "M100" ).Content;
-            int m100_int = siemensPPI.ReadInt32( "M100" ).Content;
-            uint m100_uint = siemensPPI.ReadUInt32( "M100" ).Content;
-            float m100_float = siemensPPI.ReadFloat( "M100" ).Content;
-            double m100_double = siemensPPI.ReadDouble( "M100" ).Content;
-            string m100_string = siemensPPI.ReadString( "M100", 10 ).Content;
-
-            HslCommunication.Core.IByteTransform ByteTransform = new HslCommunication.Core.ReverseBytesTransform( );
-
+            thread_status = 3;
+            failed = 0;
+            thread_time_start = DateTime.Now;
+            new Thread( new ThreadStart( thread_test2 ) ) { IsBackground = true, }.Start( );
+            new Thread( new ThreadStart( thread_test2 ) ) { IsBackground = true, }.Start( );
+            new Thread( new ThreadStart( thread_test2 ) ) { IsBackground = true, }.Start( );
+            button3.Enabled = false;
         }
 
-        private void Test3()
+        private void thread_test2( )
         {
-            // 读取操作，这里的M100可以替换成I100,Q100,DB20.100效果时一样的
-            bool M100_7 = siemensPPI.ReadBool( "M100.7" ).Content;  // 读取M100.7是否通断，注意M100.0等同于M100
-            byte byte_M100 = siemensPPI.ReadByte( "M100" ).Content; // 读取M100的值
-            short short_M100 = siemensPPI.ReadInt16( "M100" ).Content; // 读取M100-M101组成的字
-            ushort ushort_M100 = siemensPPI.ReadUInt16( "M100" ).Content; // 读取M100-M101组成的无符号的值
-            int int_M100 = siemensPPI.ReadInt32( "M100" ).Content;         // 读取M100-M103组成的有符号的数据
-            uint uint_M100 = siemensPPI.ReadUInt32( "M100" ).Content;      // 读取M100-M103组成的无符号的值
-            float float_M100 = siemensPPI.ReadFloat( "M100" ).Content;   // 读取M100-M103组成的单精度值
-            long long_M100 = siemensPPI.ReadInt64( "M100" ).Content;      // 读取M100-M107组成的大数据值
-            ulong ulong_M100 = siemensPPI.ReadUInt64( "M100" ).Content;   // 读取M100-M107组成的无符号大数据
-            double double_M100 = siemensPPI.ReadDouble( "M100" ).Content; // 读取M100-M107组成的双精度值
-            string str_M100 = siemensPPI.ReadString( "M100", 10 ).Content;// 读取M100-M109组成的ASCII字符串数据
-
-            // 写入操作，这里的M100可以替换成I100,Q100,DB20.100效果时一样的
-            siemensPPI.Write( "M100.7", true );                // 写位，注意M100.0等同于M100
-            siemensPPI.Write( "M100", (byte)0x33 );            // 写单个字节
-            siemensPPI.Write( "M100", (short)12345 );          // 写双字节有符号
-            siemensPPI.Write( "M100", (ushort)45678 );         // 写双字节无符号
-            siemensPPI.Write( "M100", 123456789 );             // 写双字有符号
-            siemensPPI.Write( "M100", (uint)3456789123 );      // 写双字无符号
-            siemensPPI.Write( "M100", 123.456f );              // 写单精度
-            siemensPPI.Write( "M100", 1234556434534545L );     // 写大整数有符号
-            siemensPPI.Write( "M100", 523434234234343UL );     // 写大整数无符号
-            siemensPPI.Write( "M100", 123.456d );              // 写双精度
-            siemensPPI.Write( "M100", "K123456789" );// 写ASCII字符串
-
-            OperateResult<byte[]> read = siemensPPI.Read( "M100", 10 );
+            int count = 500;
+            while (count > 0)
             {
-                if(read.IsSuccess)
+                if (!melsecSerial.Write( "D100", (short)1234 ).IsSuccess) failed++;
+                if (!melsecSerial.ReadInt16( "D100" ).IsSuccess) failed++;
+                count--;
+            }
+            thread_end( );
+        }
+
+        private void thread_end( )
+        {
+            if (Interlocked.Decrement( ref thread_status ) == 0)
+            {
+                // 执行完成
+                Invoke( new Action( ( ) =>
                 {
-                    byte m100 = read.Content[0];
-                    byte m101 = read.Content[1];
-                    byte m102 = read.Content[2];
-                    byte m103 = read.Content[3];
-                    byte m104 = read.Content[4];
-                    byte m105 = read.Content[5];
-                    byte m106 = read.Content[6];
-                    byte m107 = read.Content[7];
-                    byte m108 = read.Content[8];
-                    byte m109 = read.Content[9];
-                }
-                else
-                {
-                    // 发生了异常
-                }
+                    button3.Enabled = true;
+                    MessageBox.Show( "耗时：" + (DateTime.Now - thread_time_start).TotalSeconds + Environment.NewLine + "失败次数：" + failed );
+                } ) );
             }
         }
+
+
+
 
         #endregion
 
         private void button3_Click_1( object sender, EventArgs e )
         {
-            OperateResult start = siemensPPI.Start( );
-            if (start.IsSuccess) MessageBox.Show( "Start Success!" );
-            else MessageBox.Show( start.Message );
+            OperateResult operate = melsecSerial.StartPLC( );
+            if(!operate.IsSuccess)
+            {
+                MessageBox.Show( "启动失败：" + operate.Message );
+            }
+            else
+            {
+                MessageBox.Show( "启动成功" );
+            }
         }
 
         private void button4_Click( object sender, EventArgs e )
         {
-            OperateResult stop = siemensPPI.Stop( );
-            if (stop.IsSuccess) MessageBox.Show( "Stop Success!" );
-            else MessageBox.Show( stop.Message );
+
+            OperateResult operate = melsecSerial.StopPLC( );
+            if (!operate.IsSuccess)
+            {
+                MessageBox.Show( "停止失败：" + operate.Message );
+            }
+            else
+            {
+                MessageBox.Show( "停止成功" );
+            }
         }
     }
 }

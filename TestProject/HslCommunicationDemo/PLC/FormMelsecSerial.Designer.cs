@@ -915,9 +915,9 @@
             this.label5.ForeColor = System.Drawing.Color.Red;
             this.label5.Location = new System.Drawing.Point(540, 9);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(50, 17);
+            this.label5.Size = new System.Drawing.Size(90, 17);
             this.label5.TabIndex = 5;
-            this.label5.Text = "FX 串口";
+            this.label5.Text = "FX 编程口 串口";
             // 
             // label20
             // 
