@@ -1,4 +1,5 @@
-﻿using HslCommunication.ModBus;
+﻿using HslCommunication.Core.Address;
+using HslCommunication.ModBus;
 using HslCommunication.Serial;
 using System;
 using System.Collections.Generic;
@@ -24,7 +25,7 @@ namespace HslCommunication.Instrument.Temperature
         /// </summary>
         public DAM3601( ) : base( )
         {
-            
+            SleepTime = 200;
         }
 
         /// <summary>
@@ -33,7 +34,7 @@ namespace HslCommunication.Instrument.Temperature
         /// <param name="station">站号信息</param>
         public DAM3601( byte station ) : base( station )
         {
-
+            SleepTime = 200;
         }
 
         #endregion
@@ -88,35 +89,12 @@ namespace HslCommunication.Instrument.Temperature
         /// </example>
         public override OperateResult<byte[]> Read( string address, ushort length )
         {
-            OperateResult<ModbusAddress> analysis = ModbusInfo.AnalysisReadAddress( address, AddressStartWithZero );
+            OperateResult<ModbusAddress> analysis = ModbusInfo.AnalysisAddress( address, AddressStartWithZero, ModbusInfo.ReadRegister );
             if (!analysis.IsSuccess) return OperateResult.CreateFailedResult<byte[]>( analysis );
 
             return ReadModBusBase( analysis.Content, length );
         }
-
-        /// <summary>
-        /// 重写的数据接收方法，需要连续接收，直到CRC校验成功或是超时，接收时间会比较久
-        /// </summary>
-        /// <param name="sender">串口对象</param>
-        /// <param name="e">串口的数据对象</param>
-        protected override void SP_ReadData_DataReceived( object sender, SerialDataReceivedEventArgs e )
-        {
-            while (true)
-            {
-                Thread.Sleep( 20 );
-                if (SP_ReadData.BytesToRead < 1) continue;
-
-                // 继续接收数据
-                receiveCount += SP_ReadData.Read( buffer, receiveCount, SP_ReadData.BytesToRead );
-
-                // CRC校验成功及退出
-                byte[] data = new byte[receiveCount];
-                Array.Copy( buffer, 0, data, 0, receiveCount );
-                if (SoftCRC16.CheckCRC16( data )) break;
-            }
-            resetEvent.Set( );
-        }
-
+        
         #endregion
 
         #region Object Override
@@ -127,10 +105,9 @@ namespace HslCommunication.Instrument.Temperature
         /// <returns>字符串</returns>
         public override string ToString( )
         {
-            return "DAM3601";
+            return $"DAM3601[{PortName}:{BaudRate}]";
         }
 
         #endregion
-
     }
 }
